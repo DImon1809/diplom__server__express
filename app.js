@@ -1,7 +1,6 @@
 const express = require("express");
 const router = require("./router");
 const cors = require("cors");
-const path = require("path");
 
 require("dotenv").config();
 
@@ -18,7 +17,3 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 app.use("/api", router);
-
-app.get("/", (req, res) => {
-  res.send("<h1>Hello world</h1>");
-});

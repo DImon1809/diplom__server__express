@@ -49,11 +49,13 @@ const ParametersController = {
 
   updateParam: async (req, res) => {
     try {
-      const { id, details } = req.body;
+      const { id, details, upperLimit, lowerLimit } = req.body;
 
       const updatedParameter = await prisma.parameter.update({
         where: { id },
         data: {
+          lowerLimit: lowerLimit || Math.min(...details),
+          upperLimit: upperLimit || Math.max(...details),
           details,
         },
       });

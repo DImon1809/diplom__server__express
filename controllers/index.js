@@ -4,7 +4,6 @@ const CommentController = require("./comment-controller");
 const LikeController = require("./like-controller");
 const FollowController = require("./follow-controller");
 const ParametersController = require("./parameters-controller");
-const CalculateCards = require("./calculate-cards");
 
 module.exports = {
   UserController,
@@ -13,5 +12,4 @@ module.exports = {
   CommentController,
   LikeController,
   FollowController,
-  CalculateCards,
 };

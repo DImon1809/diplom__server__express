@@ -1,18 +1,18 @@
 const { prisma } = require("../prisma/prisma-client");
 
-const D3D4 = {
-  2: { D3: 0, D4: 3.267 },
-  3: { D3: 0, D4: 2.574 },
-  4: { D3: 0, D4: 2.282 },
-  5: { D3: 0, D4: 2.114 },
-  6: { D3: 0.076, D4: 2.004 },
-  7: { D3: 0.136, D4: 1.924 },
-  8: { D3: 0.184, D4: 1.864 },
-  9: { D3: 0.223, D4: 1.816 },
-  10: { D3: 0.256, D4: 1.777 },
+const XS_Coeffs = {
+  2: { A3: 2.659, B3: 0, B4: 3.267 },
+  3: { A3: 1.954, B3: 0, B4: 2.568 },
+  4: { A3: 1.628, B3: 0, B4: 2.266 },
+  5: { A3: 1.427, B3: 0, B4: 2.114 },
+  6: { A3: 1.287, B3: 0, B4: 2.004 },
+  7: { A3: 1.182, B3: 0.076, B4: 1.924 },
+  8: { A3: 1.099, B3: 0.136, B4: 1.864 },
+  9: { A3: 1.032, B3: 0.184, B4: 1.816 },
+  10: { A3: 0.975, B3: 0.223, B4: 1.777 },
 };
 
-const CalculateCards = {
+const CalculateXS = {
   getControlChartData: async (req, res) => {
     try {
       const userId = Number(req.user);
@@ -36,43 +36,44 @@ const CalculateCards = {
       }
 
       const groupSize = 5;
-      const { D3, D4 } = D3D4[groupSize];
-      const A2 = 0.577; // для n=5
+      const { A3, B3, B4 } = XS_Coeffs[groupSize];
 
-      // Формируем подгруппы
       const groups = [];
       for (let i = 0; i < numbers.length; i += groupSize) {
         groups.push(numbers.slice(i, i + groupSize));
       }
 
-      // Вычисляем xbar и R для каждой подгруппы
       const subgroups = groups.map((group) => {
         const avg = group.reduce((a, b) => a + b, 0) / group.length;
-        const range = Math.max(...group) - Math.min(...group);
-        return { xbar: avg, r: range };
+
+        const mean = avg;
+        const variance =
+          group.reduce((acc, val) => acc + (val - mean) ** 2, 0) /
+          (group.length - 1);
+        const stdDev = Math.sqrt(variance);
+
+        return { xbar: avg, s: stdDev };
       });
 
-      // Средние X̄ и R
       const xbarAvg =
         subgroups.reduce((acc, d) => acc + d.xbar, 0) / subgroups.length;
-      const rAvg =
-        subgroups.reduce((acc, d) => acc + d.r, 0) / subgroups.length;
+      const sAvg =
+        subgroups.reduce((acc, d) => acc + d.s, 0) / subgroups.length;
 
-      // Контрольные пределы
       const XbarLimits = {
-        UCL: xbarAvg + A2 * rAvg,
-        LCL: xbarAvg - A2 * rAvg,
+        UCL: xbarAvg + A3 * sAvg,
+        LCL: xbarAvg - A3 * sAvg,
       };
 
-      const Rlimits = {
-        UCL: D4 * rAvg,
-        LCL: D3 * rAvg,
+      const Slimits = {
+        UCL: B4 * sAvg,
+        LCL: B3 * sAvg,
       };
 
       res.json({
         chartData: subgroups,
         XbarLimits,
-        Rlimits,
+        Slimits,
       });
     } catch (err) {
       console.error(err);
@@ -81,4 +82,4 @@ const CalculateCards = {
   },
 };
 
-module.exports = CalculateCards;
+module.exports = CalculateXS;

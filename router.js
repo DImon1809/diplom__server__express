@@ -1,14 +1,16 @@
 const express = require("express");
-const multer = require("multer");
+const { UserController, ParametersController } = require("./controllers");
 const {
-  UserController,
-  PostController,
-  CommentController,
-  LikeController,
-  FollowController,
-  ParametersController,
-  CalculateCards,
-} = require("./controllers");
+  CalculateXR,
+  CalculateXS,
+  CalculateMR,
+  CalculateIMR,
+  CalculateCUSUM,
+  CalculatePChart,
+  CalculateNPChart,
+  CalculateUChart,
+  CalculateCChart,
+} = require("./calculations");
 
 const checkAuth = require("./middleware/checkAuth");
 
@@ -30,10 +32,18 @@ router.get(
 );
 
 // Расчёты
+router.get("/calculate/xrmiddle", checkAuth, CalculateXR.getControlChartData);
+router.get("/calculate/xscard", checkAuth, CalculateXS.getControlChartData);
+router.get("/calculate/mrcard", checkAuth, CalculateMR.getControlChartData);
+router.get("/calculate/imrcard", checkAuth, CalculateIMR.getControlChartData);
+router.get("/calculate/cusum", checkAuth, CalculateCUSUM.getControlChartData);
+router.get("/calculate/pcard", checkAuth, CalculatePChart.getControlChartData);
 router.get(
-  "/calculate/xrmiddle",
+  "/calculate/npcard",
   checkAuth,
-  CalculateCards.getControlChartData
+  CalculateNPChart.getControlChartData
 );
+router.get("/calculate/ucard", checkAuth, CalculateUChart.getControlChartData);
+router.get("/calculate/ccard", checkAuth, CalculateCChart.getControlChartData);
 
 module.exports = router;
