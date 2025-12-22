@@ -54,15 +54,15 @@ const ParametersController = {
       const updatedParameter = await prisma.parameter.update({
         where: { id },
         data: {
-          lowerLimit: lowerLimit || Math.min(...details),
-          upperLimit: upperLimit || Math.max(...details),
+          lowerLimit: lowerLimit || String(Math.min(...details.map(Number))),
+          upperLimit: upperLimit || String(Math.max(...details.map(Number))),
           details,
         },
       });
 
       return res.status(201).json(updatedParameter);
     } catch (err) {
-      console.erorr(err);
+      console.error(err);
 
       return res.status(500).json({ message: "Ошибка сервера!" });
     }
