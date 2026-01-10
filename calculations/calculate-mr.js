@@ -1,4 +1,7 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
 
 // Коэффициенты для подгрупп размера n
 const DR_Coeffs = {
@@ -12,6 +15,11 @@ const DR_Coeffs = {
   9: { D3: 0.223, D4: 1.816, A_median: 0.337 },
   10: { D3: 0.256, D4: 1.777, A_median: 0.308 },
 };
+
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
 
 function median(arr) {
   const sorted = [...arr].sort((a, b) => a - b);
@@ -75,10 +83,23 @@ const CalculateMR = {
         LCL: D3 * rAvg,
       };
 
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения контрольной карты медиан и размахов. 
+        У меня получились следующие данные ${JSON.stringify({
+          chartData: subgroups,
+          Mlimits,
+          Rlimits,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
       res.json({
         chartData: subgroups,
         Mlimits,
         Rlimits,
+        comment: messaageAI?.output_text || "",
       });
     } catch (err) {
       console.error(err);

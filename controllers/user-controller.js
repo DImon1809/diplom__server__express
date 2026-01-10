@@ -72,7 +72,11 @@ const UserController = {
           id: req.user,
         },
         include: {
-          parameters: true,
+          parameters: {
+            include: {
+              xrMiddle: true,
+            },
+          },
         },
       });
 

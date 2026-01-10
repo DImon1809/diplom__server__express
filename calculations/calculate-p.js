@@ -1,4 +1,12 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
+
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
 
 const CalculatePChart = {
   getControlChartData: async (req, res) => {
@@ -54,7 +62,24 @@ const CalculatePChart = {
         };
       });
 
-      res.json({ pValues, pBar, controlLimits });
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения p-контрольной карты. 
+        У меня получились следующие данные ${JSON.stringify({
+          pValues,
+          pBar,
+          controlLimits,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
+      res.json({
+        pValues,
+        pBar,
+        controlLimits,
+        comment: messaageAI?.output_text || "",
+      });
     } catch (err) {
       console.error(err);
       res.status(500).json({ message: "Ошибка сервера!", error: err.message });

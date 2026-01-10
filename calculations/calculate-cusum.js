@@ -1,4 +1,12 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
+
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
 
 const CalculateCUSUM = {
   getControlChartData: async (req, res) => {
@@ -45,11 +53,25 @@ const CalculateCUSUM = {
         }
       });
 
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения кумулятивной контрольной карты. 
+        У меня получились следующие данные ${JSON.stringify({
+          numbers,
+          Cplus,
+          Cminus,
+          H,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
       res.json({
         numbers,
         Cplus,
         Cminus,
         H,
+        comment: messaageAI?.output_text || "",
       });
     } catch (err) {
       console.error(err);

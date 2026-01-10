@@ -1,8 +1,16 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
 
 const d2 = 1.128;
 const D3 = 0;
 const D4 = 3.267;
+
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
 
 const CalculateIMR = {
   getControlChartData: async (req, res) => {
@@ -50,10 +58,23 @@ const CalculateIMR = {
         MR: index === 0 ? null : MR[index - 1],
       }));
 
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения контрольной карты индивидуальных значений и скользящих размахов. 
+        У меня получились следующие данные ${JSON.stringify({
+          chartData,
+          ILimits,
+          MRlimits,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
       res.json({
         chartData,
         ILimits,
         MRlimits,
+        comment: messaageAI?.output_text || "",
       });
     } catch (err) {
       console.error(err);

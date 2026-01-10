@@ -1,4 +1,7 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
 
 const XS_Coeffs = {
   2: { A3: 2.659, B3: 0, B4: 3.267 },
@@ -11,6 +14,11 @@ const XS_Coeffs = {
   9: { A3: 1.032, B3: 0.184, B4: 1.816 },
   10: { A3: 0.975, B3: 0.223, B4: 1.777 },
 };
+
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
 
 const CalculateXS = {
   getControlChartData: async (req, res) => {
@@ -70,10 +78,23 @@ const CalculateXS = {
         LCL: B3 * sAvg,
       };
 
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения контрольной карты средних значений и стандартных отклонений. 
+        У меня получились следующие данные ${JSON.stringify({
+          chartData: subgroups,
+          XbarLimits,
+          Slimits,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
       res.json({
         chartData: subgroups,
         XbarLimits,
         Slimits,
+        comment: messaageAI?.output_text || "",
       });
     } catch (err) {
       console.error(err);

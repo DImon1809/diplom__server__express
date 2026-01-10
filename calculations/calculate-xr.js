@@ -1,4 +1,7 @@
 const { prisma } = require("../prisma/prisma-client");
+const OpenAI = require("openai");
+
+require("dotenv").config();
 
 const D3D4 = {
   2: { D3: 0, D4: 3.267 },
@@ -12,14 +15,20 @@ const D3D4 = {
   10: { D3: 0.256, D4: 1.777 },
 };
 
+const openai = new OpenAI({
+  apiKey: process.env.API_KEY,
+  baseURL: "https://api.proxyapi.ru/openai/v1",
+});
+
 const CalculateXR = {
   getControlChartData: async (req, res) => {
     try {
       const userId = Number(req.user);
+      const { id: parameterId } = req.query;
 
       const parameters = await prisma.parameter.findMany({
         where: { userId },
-        select: { name: true, details: true },
+        select: { id: true, name: true, details: true },
       });
 
       if (!parameters.length) {
@@ -65,10 +74,42 @@ const CalculateXR = {
         LCL: D3 * rAvg,
       };
 
+      const messaageAI = await openai.responses.create({
+        model: "gpt-4.1-nano",
+        input: `Я высчитал значения контрольной карты средних значений и размахов. 
+        У меня получились следующие данные ${JSON.stringify({
+          chartData: subgroups,
+          XbarLimits,
+          Rlimits,
+        })}.
+        Что ты можешь кратко сказать о качестве протикания технологического процесса.
+        Какие на твой взгляд есть потенциальные проблемы. Напиши кратко`,
+      });
+
+      await prisma.xRMiddle.upsert({
+        where: {
+          parameterId: Number(parameterId),
+        },
+        update: {
+          chartData: subgroups,
+          XbarLimits,
+          Rlimits,
+          comment: messaageAI?.output_text || "",
+        },
+        create: {
+          chartData: subgroups,
+          XbarLimits,
+          Rlimits,
+          comment: messaageAI?.output_text || "",
+          parameterId: Number(parameterId),
+        },
+      });
+
       res.json({
         chartData: subgroups,
         XbarLimits,
         Rlimits,
+        comment: messaageAI?.output_text || "",
       });
     } catch (err) {
       console.error(err);
